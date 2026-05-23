@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { employeesApi } from "@/lib/api";
 import { formatSalary, formatDate } from "@/lib/utils";
 import type { Employee } from "@/types/employee";
@@ -33,7 +33,6 @@ export function EmployeeTable({
   onDelete,
 }: EmployeeTableProps) {
   const [offset, setOffset] = useState(0);
-  const queryClient = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["employees", { limit: PAGE_SIZE, offset, search, country }],
@@ -45,13 +44,6 @@ export function EmployeeTable({
         country: country || undefined,
       }),
     placeholderData: (prev) => prev,
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: number) => employeesApi.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["employees"] });
-    },
   });
 
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
