@@ -67,6 +67,8 @@ pytest tests/ -v
 
 # Seed 10,000 employees
 python scripts/seed.py
+# Or via Make:
+make seed
 
 # Start the API server
 uvicorn app.main:app --reload
@@ -113,6 +115,113 @@ Frontend at http://localhost:3000
 |--------|------|-------------|
 | `GET` | `/health` | Health check |
 | `GET` | `/docs` | Swagger UI |
+
+## Seeding — 10,000 Employee Data Generator
+
+The seed script populates the database with realistic synthetic employee records for development and testing.
+
+### Quick Run (from `backend/` directory)
+
+```bash
+# Method 1: Direct Python (recommended for CI/CD)
+python scripts/seed.py
+
+# Method 2: Via Make
+make seed
+```
+
+### Command-Line Options
+
+| Flag | Shorthand | Default | Description |
+|------|-----------|---------|-------------|
+| `--count` | `-c` | `10000` | Number of employees to generate |
+
+```bash
+# Seed exactly 10,000 (default)
+python scripts/seed.py
+
+# Seed 5,000 employees
+python scripts/seed.py --count 5000
+python scripts/seed.py -c 5000
+
+# Seed 50,000 employees (for load testing)
+python scripts/seed.py --count 50000
+```
+
+### Data Generation Strategy
+
+| Attribute | Source | Details |
+|-----------|--------|---------|
+| **Full Name** | `first_names.txt` (140 names) × `last_names.txt` (150 names) | 21,000 unique combinations, chosen randomly |
+| **Job Title** | 16 predefined titles | Software Engineer → Sales Executive |
+| **Salary** | Per-title salary bands | e.g., Software Engineer: $60K–$100K; Principal Engineer: $160K–$220K |
+| **Department** | 9 departments | Engineering, Product, Data, Operations, Marketing, Sales, HR, Finance, Design |
+| **Country** | 10 countries | India, USA, UK, Germany, Canada, Australia, Singapore, Brazil, France, Japan |
+| **Currency** | Hardcoded `USD` | All salaries in USD for consistent comparison |
+| **Employment Type** | Weighted random | 75% Full-time, 25% Contractor |
+| **Hire Date** | Random within 10 years | `today - 30–3650 days` |
+
+### Performance
+
+| Records | Batch Size | Journal Mode | Sync | Expected Time | Throughput |
+|---------|------------|-------------|------|--------------|------------|
+| 10,000 | 1,000 | WAL | NORMAL | < 3 seconds | ~5,000 rows/sec |
+| 50,000 | 1,000 | WAL | NORMAL | ~10–15 seconds | ~3,500 rows/sec |
+
+**Performance strategy:**
+- Uses **SQLAlchemy Core** `executemany()` (not ORM) — bypasses object-mapping overhead
+- Enables **SQLite WAL mode** for concurrent reads during writes
+- Sets **synchronous=NORMAL** (not FULL) for faster writes with acceptable crash safety
+- Batches inserts at **1,000 rows per transaction** to balance memory and commit frequency
+
+### Idempotency
+
+The script is **safe to run repeatedly**. It checks the current employee count before inserting:
+
+```
+If current count >= target count → skip (no duplicates)
+If current count <  target count → insert remaining
+```
+
+```bash
+# Run it 3 times — same result, no duplicates
+$ python scripts/seed.py
+[OK] Seeded 10000 employees in 2.34s (4274 records/sec)
+
+$ python scripts/seed.py
+Already have 10000 employees (target: 10000). Skipping seed.
+
+$ python scripts/seed.py -c 5000
+Already have 10000 employees (target: 5000). Skipping seed.
+```
+
+### Resetting the Database
+
+To wipe all data and start fresh:
+
+```bash
+# Delete the database file
+del app\salary_management.db       # Windows
+rm app/salary_management.db        # macOS/Linux
+
+# Re-seed
+python scripts/seed.py
+```
+
+### Verification
+
+After seeding, verify via API:
+
+```bash
+curl http://localhost:8000/api/employees?limit=5
+curl http://localhost:8000/api/insights/summary
+```
+
+Or check the database directly:
+
+```bash
+python -c "import sqlite3; c=sqlite3.connect('app/salary_management.db'); print(c.execute('SELECT COUNT(*) FROM employees').fetchone()[0]); c.close()"
+```
 
 ## Test Results
 
