@@ -123,21 +123,20 @@ def seed(n: int = 10000):
     """Seed the database with `n` employee records."""
     engine = create_engine(DATABASE_URL)
 
+    # --- Ensure table exists (must come first for fresh DBs) ---
+    with engine.connect() as conn:
+        conn.execute(text("PRAGMA journal_mode=WAL"))
+        conn.execute(text("PRAGMA synchronous=NORMAL"))
+    from app.models.employee import Employee  # noqa: F401
+    from app.database import Base
+    Base.metadata.create_all(bind=engine)
+
     # --- Idempotency check ---
     with engine.connect() as conn:
         count = conn.execute(text("SELECT COUNT(*) FROM employees")).scalar()
         if count >= n:
             print(f"Already have {count} employees (target: {n}). Skipping seed.")
             return
-
-    # --- Enable WAL mode for faster writes ---
-    with engine.connect() as conn:
-        conn.execute(text("PRAGMA journal_mode=WAL"))
-        conn.execute(text("PRAGMA synchronous=NORMAL"))
-        # Ensure table exists
-        from app.models.employee import Employee  # noqa: F401
-        from app.database import Base
-        Base.metadata.create_all(bind=engine)
 
     print(f"Seeding {n} employees...")
     first_names = load_names("scripts/first_names.txt")
