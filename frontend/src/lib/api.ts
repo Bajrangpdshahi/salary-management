@@ -7,10 +7,12 @@ import type {
   CountryStats,
   JobTitleStats,
   GlobalSummary,
+  InsightsFilters,
 } from "@/types/employee";
 
+// Empty baseURL uses Next.js rewrites proxy — no CORS issues
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "",
 });
 
 export const employeesApi = {
@@ -35,6 +37,9 @@ export const employeesApi = {
 };
 
 export const insightsApi = {
+  filters: () =>
+    api.get<InsightsFilters>("/api/insights/filters").then((r) => r.data),
+
   countryStats: (country: string) =>
     api
       .get<CountryStats>(`/api/insights/country/${country}`)
