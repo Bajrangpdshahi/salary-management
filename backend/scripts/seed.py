@@ -22,7 +22,14 @@ from sqlalchemy.orm import Session
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-DATABASE_URL = "sqlite:///./salary_management.db"
+import os
+
+# Deterministic path — matches backend/app/database.py
+DB_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "app", "salary_management.db",
+)
+DATABASE_URL = f"sqlite:///{DB_PATH}"
 BATCH_SIZE = 1000
 
 COUNTRIES = [
