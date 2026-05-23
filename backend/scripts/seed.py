@@ -8,8 +8,11 @@ Bulk inserts 10,000 employees using SQLAlchemy Core `executemany` for performanc
 Usage:
     python scripts/seed.py              # default 10,000
     python scripts/seed.py --count 5000  # custom count
+    python -m scripts.seed              # run as module (if cwd is backend/)
 """
 
+import os
+import sys
 import time
 import random
 import argparse
@@ -19,10 +22,15 @@ from datetime import date, timedelta
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
+# Ensure the backend directory is on sys.path so `from app.…` imports resolve
+# regardless of whether the script is invoked as `python scripts/seed.py` or
+# `python -m scripts.seed`.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(_HERE))
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-import os
 
 # Deterministic path — matches backend/app/database.py
 DB_PATH = os.path.join(
