@@ -2,13 +2,23 @@
 
 Bulk inserts 10,000 employees using SQLAlchemy Core `executemany` for performance.
 - WAL journal mode + NORMAL synchronous for speed
-- Idempotency: skips if ≥ N employees already exist
+- Idempotency: skips if >= N employees already exist
 - Target: < 3 seconds for 10,000 records
 
-Usage:
-    python scripts/seed.py              # default 10,000
-    python scripts/seed.py --count 5000  # custom count
-    python -m scripts.seed              # run as module (if cwd is backend/)
+Usage (run from `backend/` directory):
+    python scripts/seed.py                  # seed 10,000 (default)
+    python scripts/seed.py --count 5000     # seed 5,000
+    python scripts/seed.py -c 100           # seed 100 (quick test)
+    python scripts/seed.py -c 50000         # seed 50,000 (load testing)
+
+Resetting (delete DB first, then re-seed):
+    del app\\salary_management.db && python scripts/seed.py       # Windows
+    rm app/salary_management.db && python scripts/seed.py         # macOS/Linux
+
+Idempotency note:
+    If the DB already has >= target employees, the script skips with:
+    "Already have NNN employees (target: NNN). Skipping seed."
+    Delete the DB file first (see above) if you need to re-seed with the same count.
 """
 
 import os
@@ -81,8 +91,9 @@ SALARY_RANGE = {
 # Helpers
 # ---------------------------------------------------------------------------
 def load_names(filepath: str) -> list[str]:
-    """Load name list from file, stripping whitespace."""
-    return Path(filepath).read_text().strip().splitlines()
+    """Load name list from file, splitting on commas and newlines."""
+    raw = Path(filepath).read_text().strip()
+    return [name.strip() for name in raw.replace("\n", ",").split(",") if name.strip()]
 
 
 def generate_employee(first_names: list[str], last_names: list[str]) -> dict:

@@ -65,8 +65,13 @@ pip install -r requirements.txt -r requirements-dev.txt
 # Run tests
 pytest tests/ -v
 
-# Seed 10,000 employees
+# Seed 10,000 employees (idempotent — safe to rerun)
 python scripts/seed.py
+
+# Re-seed from scratch (delete old DB first)
+del app\salary_management.db && python scripts/seed.py   # Windows
+rm app/salary_management.db && python scripts/seed.py    # macOS/Linux
+
 # Or via Make:
 make seed
 
@@ -178,10 +183,18 @@ python scripts/seed.py --count 50000
 
 The script is **safe to run repeatedly**. It checks the current employee count before inserting:
 
+| Condition | Behavior |
+|-----------|----------|
+| Current count < target count | Inserts `target - current` additional rows |
+| Current count >= target count | Skips (no duplicates, no changes) |
+
+This means if you already have 103 employees and run `--count 5`, you'll see:
+
 ```
-If current count >= target count → skip (no duplicates)
-If current count <  target count → insert remaining
+Already have 103 employees (target: 5). Skipping seed.
 ```
+
+**This is not an error** — it means the DB already has more employees than requested. To re-seed with a fresh set, delete the DB first (see "Resetting" below).
 
 ```bash
 # Run it 3 times — same result, no duplicates
