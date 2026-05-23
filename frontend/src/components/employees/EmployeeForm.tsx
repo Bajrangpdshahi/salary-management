@@ -86,6 +86,9 @@ export function EmployeeForm({ open, onOpenChange, employee }: EmployeeFormProps
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       onOpenChange(false);
     },
+    onError: (err: Error) => {
+      setErrors({ form: err.message || "Failed to create employee. Is the backend running?" });
+    },
   });
 
   const updateMutation = useMutation({
@@ -94,6 +97,9 @@ export function EmployeeForm({ open, onOpenChange, employee }: EmployeeFormProps
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       onOpenChange(false);
+    },
+    onError: (err: Error) => {
+      setErrors({ form: err.message || "Failed to update employee. Is the backend running?" });
     },
   });
 
@@ -229,6 +235,10 @@ export function EmployeeForm({ open, onOpenChange, employee }: EmployeeFormProps
               />
             </div>
           </div>
+
+          {errors.form && (
+            <p className="text-sm text-red-500 mb-2">{errors.form}</p>
+          )}
 
           <DialogFooter>
             <Button

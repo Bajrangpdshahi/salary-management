@@ -33,6 +33,9 @@ export function DeleteConfirmDialog({
       queryClient.invalidateQueries({ queryKey: ["employees"] });
       onOpenChange(false);
     },
+    onError: (err: Error) => {
+      alert(err.message || "Failed to delete employee. Is the backend running?");
+    },
   });
 
   if (!employee) return null;
