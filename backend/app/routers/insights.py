@@ -101,30 +101,30 @@ def get_country_stats(country: str, db: Session = Depends(get_db)):
 # ---------------------------------------------------------------------------
 @router.get("/job-title")
 def get_job_title_stats(
-    country: str = Query(...),
+    country: str | None = Query(default=None),
     job_title: str = Query(...),
     db: Session = Depends(get_db),
 ):
-    """Return salary statistics filtered by country and job title."""
-    employees = (
-        db.query(Employee)
-        .filter(
-            Employee.country == country,
-            Employee.job_title == job_title,
-            Employee.is_active == True,
-        )
-        .all()
-    )
+    """Return salary statistics filtered by job title (and optionally country)."""
+    filters = [
+        Employee.job_title == job_title,
+        Employee.is_active == True,
+    ]
+    if country:
+        filters.append(Employee.country == country)
 
+    employees = db.query(Employee).filter(*filters).all()
+
+    label = f"{country} — " if country else "Global — "
     if not employees:
         raise HTTPException(
             status_code=404,
-            detail=f"No employees with title '{job_title}' in {country}",
+            detail=f"No employees with title '{job_title}' in {country or 'any country'}",
         )
 
     salaries = [e.salary for e in employees]
     return {
-        "country": country,
+        "country": country or "Global",
         "job_title": job_title,
         "headcount": len(salaries),
         "min_salary": min(salaries),

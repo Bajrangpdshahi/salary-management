@@ -45,10 +45,12 @@ export const insightsApi = {
       .get<CountryStats>(`/api/insights/country/${country}`)
       .then((r) => r.data),
 
-  jobTitleStats: (country: string, jobTitle: string) =>
+  jobTitleStats: (jobTitle: string, country?: string) =>
     api
       .get<JobTitleStats>("/api/insights/job-title", {
-        params: { country, job_title: jobTitle },
+        params: country
+          ? { country, job_title: jobTitle }
+          : { job_title: jobTitle },
       })
       .then((r) => r.data),
 

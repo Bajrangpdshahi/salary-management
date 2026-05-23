@@ -24,9 +24,9 @@ export function InsightsDashboard() {
   });
 
   const { data: jobTitleStats, isLoading: jobTitleLoading } = useQuery({
-    queryKey: ["insights", "job-title", country, jobTitle],
-    queryFn: () => insightsApi.jobTitleStats(country, jobTitle),
-    enabled: !!country && !!jobTitle,
+    queryKey: ["insights", "job-title", country || "global", jobTitle],
+    queryFn: () => insightsApi.jobTitleStats(jobTitle, country || undefined),
+    enabled: !!jobTitle,
   });
 
   const { data: summary } = useQuery({
@@ -73,10 +73,7 @@ export function InsightsDashboard() {
           <select
             id="insights-country"
             value={country}
-            onChange={(e) => {
-              setCountry(e.target.value);
-              setJobTitle("");
-            }}
+            onChange={(e) => setCountry(e.target.value)}
             className={selectClass}
           >
             <option value="">Select country...</option>
@@ -96,7 +93,6 @@ export function InsightsDashboard() {
             value={jobTitle}
             onChange={(e) => setJobTitle(e.target.value)}
             className={selectClass}
-            disabled={!country}
           >
             <option value="">Select job title...</option>
             {(filters?.job_titles ?? []).map((t) => (
@@ -130,10 +126,10 @@ export function InsightsDashboard() {
       )}
 
       {/* Job Title Stats */}
-      {country && jobTitle && jobTitleStats && (
+      {jobTitle && jobTitleStats && (
         <div className="space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">
-            {jobTitle} in {country} — {jobTitleStats.headcount.toLocaleString()} employees
+            {jobTitle} {country ? `in ${country}` : "(Global)"} — {jobTitleStats.headcount.toLocaleString()} employees
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <SalaryStatsCard title="Min Salary" value={jobTitleStats.min_salary} icon="min" />
