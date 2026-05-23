@@ -1,14 +1,15 @@
 """Phase 5 — Salary Insights Router (TDD-GREEN)
 
 Endpoints:
-  - GET /api/insights/country/{country}  — min/max/avg/median/percentiles/headcount
-  - GET /api/insights/job-title           — stats filtered by country + job_title
-  - GET /api/insights/summary             — global org-wide summary
+  - GET /api/insights/filters              — distinct countries & job titles for dropdowns
+  - GET /api/insights/country/{country}    — min/max/avg/median/percentiles/headcount
+  - GET /api/insights/job-title            — stats filtered by country + job_title
+  - GET /api/insights/summary              — global org-wide summary
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, distinct
 
 from app.database import get_db
 from app.models.employee import Employee
@@ -31,6 +32,32 @@ def calculate_percentile(values: list[float], p: float) -> float:
     return sorted_vals[lower] + (idx - lower) * (
         sorted_vals[upper] - sorted_vals[lower]
     )
+
+
+# ---------------------------------------------------------------------------
+# Distinct filter values for dropdowns
+# ---------------------------------------------------------------------------
+@router.get("/filters")
+def get_filters(db: Session = Depends(get_db)):
+    """Return distinct countries and job titles from active employees for dropdown population."""
+    countries = (
+        db.query(distinct(Employee.country))
+        .filter(Employee.is_active == True, Employee.country.isnot(None))
+        .order_by(Employee.country)
+        .all()
+    )
+
+    job_titles = (
+        db.query(distinct(Employee.job_title))
+        .filter(Employee.is_active == True, Employee.job_title.isnot(None))
+        .order_by(Employee.job_title)
+        .all()
+    )
+
+    return {
+        "countries": [row[0] for row in countries],
+        "job_titles": [row[0] for row in job_titles],
+    }
 
 
 # ---------------------------------------------------------------------------

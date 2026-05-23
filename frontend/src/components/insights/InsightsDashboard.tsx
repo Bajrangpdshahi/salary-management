@@ -6,28 +6,16 @@ import { insightsApi } from "@/lib/api";
 import { SalaryStatsCard } from "./SalaryStatsCard";
 import { PercentileTable } from "./PercentileTable";
 import { SalaryBarChart } from "./SalaryBarChart";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-const COUNTRIES = [
-  "USA", "Canada", "UK", "Germany", "France",
-  "Spain", "Italy", "Netherlands", "Sweden", "Denmark",
-  "India", "China", "Japan", "South Korea", "Australia",
-  "Brazil", "Mexico", "Argentina", "Singapore", "UAE",
-];
-
-const JOB_TITLES = [
-  "Software Engineer", "Senior Software Engineer", "Engineering Manager",
-  "Data Analyst", "Data Scientist", "Senior Data Scientist",
-  "Product Manager", "Senior Product Manager", "UX Designer",
-  "DevOps Engineer", "Cloud Architect", "QA Engineer",
-  "HR Manager", "Financial Analyst", "Marketing Manager",
-  "Sales Executive", "Operations Manager", "Customer Success Manager",
-  "Technical Writer", "Security Engineer",
-];
 
 export function InsightsDashboard() {
   const [country, setCountry] = useState("");
   const [jobTitle, setJobTitle] = useState("");
+
+  // Fetch distinct filter values from the database
+  const { data: filters } = useQuery({
+    queryKey: ["insights", "filters"],
+    queryFn: () => insightsApi.filters(),
+  });
 
   const { data: countryStats, isLoading: countryLoading } = useQuery({
     queryKey: ["insights", "country", country],
@@ -45,6 +33,9 @@ export function InsightsDashboard() {
     queryKey: ["insights", "summary"],
     queryFn: () => insightsApi.summary(),
   });
+
+  const selectClass =
+    "flex h-10 w-full rounded-md border border-gray-200 bg-white px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950";
 
   return (
     <div className="space-y-6">
@@ -73,37 +64,47 @@ export function InsightsDashboard() {
         </div>
       )}
 
-      {/* Filters */}
-      <div className="flex gap-4">
-        <div className="w-[200px]">
-          <label className="text-sm font-medium text-gray-600 mb-1 block">
+      {/* Filters — native <select> matching EmployeeForm convention */}
+      <div className="flex gap-4 items-end">
+        <div className="space-y-2">
+          <label htmlFor="insights-country" className="text-sm font-medium">
             Country
           </label>
-          <Select value={country} onValueChange={(v) => { setCountry(v); setJobTitle(""); }}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select country..." />
-            </SelectTrigger>
-            <SelectContent>
-              {COUNTRIES.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <select
+            id="insights-country"
+            value={country}
+            onChange={(e) => {
+              setCountry(e.target.value);
+              setJobTitle("");
+            }}
+            className={selectClass}
+          >
+            <option value="">Select country...</option>
+            {(filters?.countries ?? []).map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="w-[220px]">
-          <label className="text-sm font-medium text-gray-600 mb-1 block">
+        <div className="space-y-2">
+          <label htmlFor="insights-job-title" className="text-sm font-medium">
             Job Title
           </label>
-          <Select value={jobTitle} onValueChange={setJobTitle} key={country}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select job title..." />
-            </SelectTrigger>
-            <SelectContent>
-              {JOB_TITLES.map((t) => (
-                <SelectItem key={t} value={t}>{t}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <select
+            id="insights-job-title"
+            value={jobTitle}
+            onChange={(e) => setJobTitle(e.target.value)}
+            className={selectClass}
+            disabled={!country}
+          >
+            <option value="">Select job title...</option>
+            {(filters?.job_titles ?? []).map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 

@@ -73,3 +73,8 @@ export interface GlobalSummary {
   top_countries_by_headcount: { country: string; headcount: number }[];
   avg_salary_by_department: { department: string; avg_salary: number }[];
 }
+
+export interface InsightsFilters {
+  countries: string[];
+  job_titles: string[];
+}
